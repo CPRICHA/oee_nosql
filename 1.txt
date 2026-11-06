@@ -1,0 +1,128 @@
+Experiment 1
+
+Create an Employee collection consisting of Employee ID, Name, Age, Gender, Department and Address. Perform the following CRUD operations using MongoDB
+a.	Insert details of the employees as documents.
+b.	Retrieve the employee details whose age is less than or equal to 40 and display the same.
+c.	Display the employees whose salary is less than 50k.
+d.	Demonstrate Update operation.
+e.	Remove the details of the employees belongs to any particular department.
+
+a.	Insert details of the employees as documents.
+use employeeDB;
+db.employees.insertMany([
+  {
+    empId: "E001",
+    name: "Anjali",
+    age: 35,
+    gender: "Female",
+    department: "HR",
+    salary: 48000,
+    address: { city: "Bangalore", pincode: 560001 }
+  },
+  {
+    empId: "E002",
+    name: "Rakesh",
+    age: 42,
+    gender: "Male",
+    department: "IT",
+    salary: 62000,
+    address: { city: "Mysore", pincode: 570012 }
+  },
+  {
+    empId: "E003",
+    name: "Divya",
+    age: 29,
+    gender: "Female",
+    department: "Marketing",
+    salary: 45000,
+    address: { city: "Chennai", pincode: 600001 }
+  },
+  {
+    empId: "E004",
+    name: "Manoj",
+    age: 38,
+    gender: "Male",
+    department: "IT",
+    salary: 72000,
+    address: { city: "Hyderabad", pincode: 500001 }
+  }
+]);
+
+b.	Retrieve the employee details whose age is less than or equal to 40 and display the same.
+db.employees.find({ age: { $lte: 40 } }).pretty();
+
+c.	Display the employees whose salary is less than 50k.
+db.employees.find({ salary: { $lt: 50000 } }).pretty();
+
+d.	Demonstrate Update operation.
+db.employees.updateOne(
+  { empId: "E003" },
+  { $set: { salary: 55000 } }
+);
+db.employees.updateMany(
+  { department: "IT" },
+  { $set: { department: "Tech Support" } } );
+e.	Remove the details of the employees belongs to any particular department.
+db.employees.deleteMany({ department: "HR" });
+db.employees.find().pretty();
+
+OUTPUT:
+Insert Employees Output
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId("65f101"),
+    '1': ObjectId("65f102"),
+    '2': ObjectId("65f103"),
+    '3': ObjectId("65f104"),
+    '4': ObjectId("65f105")
+  }
+}
+Retrieve Employees age ≤ 40
+{ empId: 1, name: 'Anita', age: 25, gender: 'Female', department: 'HR', salary: 45000, address: 'Mysore' }
+{ empId: 3, name: 'Priya', age: 35, gender: 'Female', department: 'Finance', salary: 48000, address: 'Delhi' }
+{ empId: 4, name: 'Arjun', age: 39, gender: 'Male', department: 'IT', salary: 52000, address: 'Mumbai' }
+{ empId: 5, name: 'Kiran', age: 28, gender: 'Male', department: 'HR', salary: 30000, address: 'Chennai' }
+Salary < 50000
+{ name: 'Anita', salary: 45000 }
+{ name: 'Priya', salary: 48000 }
+{ name: 'Kiran', salary: 30000 }
+Update Operation Output
+{ acknowledged: true, matchedCount: 1, modifiedCount: 1 }
+Delete by Department
+{ acknowledged: true, deletedCount: 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
