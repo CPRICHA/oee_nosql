@@ -1,0 +1,242 @@
+STEP 0 - START CONFIG SERVER
+
+TERMINAL 1 - Start Config Server Run:
+
+mkdir -p /data/configdb mongod –configsvr –replSet configReplSet –dbpath
+/data/configdb –port 27019
+
+Keep Terminal 1 running.
+
+TERMINAL 2 - Connect and initialize Config Server Run:
+
+mongosh –port 27019
+
+Inside mongosh, run:
+
+rs.initiate({ _id: “configReplSet”, configsvr: true, members: [{ _id: 0,
+host: “localhost:27019” }] })
+
+STEP 1 - START SHARD SERVERS
+
+TERMINAL 3 - Start Shard 1 Run:
+
+mkdir -p /data/shard1 /data/shard2 mongod –shardsvr –replSet shard1Repl
+–dbpath /data/shard1 –port 27018
+
+Keep Terminal 3 running.
+
+TERMINAL 4 - Start Shard 2 Run:
+
+mongod –shardsvr –replSet shard2Repl –dbpath /data/shard2 –port 27020
+
+Keep Terminal 4 running.
+
+TERMINAL 5 - Connect and initialize Shard 1 Run:
+
+mongosh –port 27018
+
+Inside mongosh, run:
+
+rs.initiate({ _id: “shard1Repl”, members: [{ _id: 0, host:
+“localhost:27018” }] })
+
+TERMINAL 6 - Connect and initialize Shard 2 Run:
+
+mongosh –port 27020
+
+Inside mongosh, run:
+
+rs.initiate({ _id: “shard2Repl”, members: [{ _id: 0, host:
+“localhost:27020” }] })
+
+STEP 2 - START MONGOS ROUTER
+
+TERMINAL 7 - Start Mongos Router Run:
+
+mongos –configdb configReplSet/localhost:27019 –port 27017
+
+Keep Terminal 7 running.
+
+STEP 3 - CONNECT TO MONGOS AND ADD SHARDS
+
+TERMINAL 8 - Connect to Mongos Run:
+
+mongosh –port 27017
+
+Inside mongosh, add both shards:
+
+sh.addShard(“shard1Repl/localhost:27018”)
+sh.addShard(“shard2Repl/localhost:27020”)
+
+Check cluster status:
+
+sh.status()
+
+STEP 4 - PERFORMANCE COMPARISON SCRIPT
+
+Continue in Terminal 8, still connected to mongos.
+
+1.  Select database and clear unsharded collection:
+
+use perfTestDB db.movies_unsharded.drop()
+
+2.  Insert 1,000,000 documents into unsharded collection:
+
+print(“Inserting 1,000,000 docs into unsharded collection…”) for (let i
+= 0; i < 1000000; i++) { db.movies_unsharded.insertOne({ title:
+“Movie” + i, genre: (i % 5 === 0) ? “Action” : “Drama”, year: 2000 + (i
+% 20), rating: Math.random() * 10 }) }
+
+3.  Enable sharding and shard the collection:
+
+sh.enableSharding(“perfTestDB”) db.movies_sharded.drop()
+sh.shardCollection(“perfTestDB.movies_sharded”, { year: 1 })
+
+4.  Insert the same 1,000,000 documents into sharded collection:
+
+print(“Inserting 1,000,000 docs into sharded collection…”) for (let i =
+0; i < 1000000; i++) { db.movies_sharded.insertOne({ title: “Movie” + i,
+genre: (i % 5 === 0) ? “Action” : “Drama”, year: 2000 + (i % 20),
+rating: Math.random() * 10 }) }
+
+5.  Equality query - unsharded:
+
+db.movies_unsharded.find({ year: 2010
+}).explain(“executionStats”).executionStats
+
+6.  Equality query - sharded:
+
+db.movies_sharded.find({ year: 2010
+}).explain(“executionStats”).executionStats
+
+7.  Range query - unsharded:
+
+db.movies_unsharded.find({ year: { $gte: 2010, $lt: 2015 }
+}).explain(“executionStats”).executionStats
+
+8.  Range query - sharded:
+
+db.movies_sharded.find({ year: { $gte: 2010, $lt: 2015 }
+}).explain(“executionStats”).executionStats
+
+9.  Aggregation query - unsharded:
+
+db.movies_unsharded.aggregate([ { $match: { year: { $gte: 2010, $lt:
+2015 } } }, { $group: { _id: "$genre”, avgRating: { $avg: "$rating” } }
+}]).explain(“executionStats”).stages
+
+10. Aggregation query - sharded:
+
+db.movies_sharded.aggregate([ { $match: { year: { $gte: 2010, $lt: 2015
+} } }, { $group: { _id: "$genre”, avgRating: { $avg: "$rating” } }
+}]).explain(“executionStats”).stages
+
+EXPECTED OUTPUT (AS SHOWN IN THE MANUAL) Before sharding: -
+executionTimeMillis: 30 - totalDocsExamined: 50000
+
+After sharding: - executionTimeMillis: 8 - totalDocsExamined: 12000
+
+These are example values from the manual. Actual results may vary
+depending on the machine and cluster setup.
+
+IMPORTANT COMMANDS AND MEANINGS - mongod: starts a MongoDB server. -
+mongosh: opens MongoDB Shell. - mongos: starts the query router. -
+–configsvr: starts a config server. - –shardsvr: starts a shard
+server. - –replSet: specifies the replica set name. - –dbpath: specifies
+the data storage directory. - –port: specifies the port. -
+rs.initiate(): initializes a replica set. - sh.addShard(): adds a shard
+to the cluster. - sh.enableSharding(): enables sharding for a
+database. - sh.shardCollection(): shards a collection using the
+specified shard key. - sh.status(): displays cluster status. -
+explain(“executionStats”): displays query execution statistics. - $gte:
+greater than or equal to. - $lt: less than. - $match: filters
+documents. - $group: groups documents. - $avg: calculates average.
+
+PORT MEMORY TABLE Config Server: 27019 Shard 1: 27018 Shard 2: 27020
+Mongos Router: 27017
+
+TERMINAL MEMORY TABLE Terminal 1: Start Config Server. Terminal 2:
+Connect and initialize Config Server. Terminal 3: Start Shard 1.
+Terminal 4: Start Shard 2. Terminal 5: Connect and initialize Shard 1.
+Terminal 6: Connect and initialize Shard 2. Terminal 7: Start Mongos
+Router. Terminal 8: Connect to Mongos, add shards, and run performance
+tests.
+
+
+ii)	Implementation: 
+a.	Creation of batches: students will form group of maximum 3 members as batch to carry out the project.
+b.	Synopsis submission: Students will submit the synopsis for the problem identified that could be solved using machine learning techniques.
+addressing societal needs.
+c.	Presentation /Demo: Students will present their project along with report in specified format.
+
+
+
+
+
+
+
+
+
+VIVA-VOCE QUESTIONS
+1.	Define NoSQL.
+Answer: Non-relational database system.
+2.	What is the main advantage of NoSQL?
+Answer: Scalability.
+3.	Give one example of a column-oriented store.
+Answer: HBase.
+4.	Which NoSQL type is best for social networks?
+Answer: Graph databases.
+5.	What is the primary data unit in a document database?
+Answer: Document.
+6.	State one difference between key/value stores and document stores.
+Answer: Document stores support complex structures; key/value stores store simple pairs.
+7.	What is the role of HBase?
+Answer: Distributed storage.
+8.	Define horizontal scaling.
+Answer: Adding more servers to handle load.
+9.	Which NoSQL system uses memory-mapped files?
+Answer: MongoDB.
+10.	Name one difference between Memcached and Redis.
+Answer: Redis supports persistence; Memcached does not.
+11.	What is a compound index?
+Answer: Index on multiple fields.
+12.	Which operator uses indexes in MongoDB?
+Answer: $ operators.
+13.	What is the purpose of sparse indexes?
+Answer: Index only documents with the field.
+14.	When should indexing be avoided?
+Answer: On low-selectivity fields.
+15.	What is a capped collection?
+Answer: Fixed-size collection.
+16.	What is a tailable cursor used for?
+Answer: Real-time data streaming.
+17.	Define TTL index.
+Answer: Automatically deletes expired documents.
+18.	Which command is used for full-text search?
+Answer: $text.
+19.	What type of queries use geospatial indexes?
+Answer: Location-based queries.
+20.	What is GridFS used for?
+Answer: Storing large files.
+21.	What is the role of $match?
+Answer: Filters documents.
+22.	Which stage groups documents?
+Answer: $group.
+23.	What does $unwind do?
+Answer: Deconstructs arrays.
+24.	Define denormalization.
+Answer: Storing redundant data for performance.
+25.	What does cardinality mean?
+Answer: Uniqueness of values in a field.
+26.	Why is document growth optimization important?
+Answer: Prevents fragmentation.
+27.	What is schema migration?
+Answer: Changing database structure.
+28.	When should MongoDB not be used?
+Answer: For complex transactions.
+29.	What is the role of config servers?
+Answer: Store metadata for sharding.
+30.	What is a shard key?
+Answer: Field used to distribute data.
+
+
