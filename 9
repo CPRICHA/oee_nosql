@@ -1,0 +1,151 @@
+STEP 0 - START CONFIG SERVER
+
+TERMINAL 1 - Start Config Server Run:
+
+mkdir -p /data/configdb mongod –configsvr –replSet configReplSet –dbpath
+/data/configdb –port 27019
+
+Keep Terminal 1 running.
+
+TERMINAL 2 - Connect and initialize Config Server Run:
+
+mongosh –port 27019
+
+Inside mongosh, run:
+
+rs.initiate({ _id: “configReplSet”, configsvr: true, members: [{ _id: 0,
+host: “localhost:27019” }] })
+
+STEP 1 - START SHARD SERVERS
+
+TERMINAL 3 - Start Shard 1 Run:
+
+mkdir -p /data/shard1 /data/shard2 mongod –shardsvr –replSet shard1Repl
+–dbpath /data/shard1 –port 27018
+
+Keep Terminal 3 running.
+
+TERMINAL 4 - Start Shard 2 Run:
+
+mongod –shardsvr –replSet shard2Repl –dbpath /data/shard2 –port 27020
+
+Keep Terminal 4 running.
+
+TERMINAL 5 - Connect and initialize Shard 1 Run:
+
+mongosh –port 27018
+
+Inside mongosh, run:
+
+rs.initiate({ _id: “shard1Repl”, members: [{ _id: 0, host:
+“localhost:27018” }] })
+
+TERMINAL 6 - Connect and initialize Shard 2 Run:
+
+mongosh –port 27020
+
+Inside mongosh, run:
+
+rs.initiate({ _id: “shard2Repl”, members: [{ _id: 0, host:
+“localhost:27020” }] })
+
+STEP 2 - START MONGOS ROUTER
+
+TERMINAL 7 - Start Mongos Router Run:
+
+mongos –configdb configReplSet/localhost:27019 –port 27017
+
+Keep Terminal 7 running.
+
+STEP 3 - CONNECT TO MONGOS AND ADD SHARDS
+
+TERMINAL 8 - Connect to Mongos Run:
+
+mongosh –port 27017
+
+Inside mongosh, add both shards:
+
+sh.addShard(“shard1Repl/localhost:27018”)
+sh.addShard(“shard2Repl/localhost:27020”)
+
+Check cluster status:
+
+sh.status()
+
+STEP 4 - PERFORMANCE COMPARISON SCRIPT
+
+Continue in Terminal 8, still connected to mongos.
+
+1.  Select database and clear unsharded collection:
+
+use perfTestDB db.movies_unsharded.drop()
+
+2.  Insert 1,000,000 documents into unsharded collection:
+
+print(“Inserting 1,000,000 docs into unsharded collection…”) for (let i
+= 0; i < 1000000; i++) { db.movies_unsharded.insertOne({ title:
+“Movie” + i, genre: (i % 5 === 0) ? “Action” : “Drama”, year: 2000 + (i
+% 20), rating: Math.random() * 10 }) }
+
+3.  Enable sharding and shard the collection:
+
+sh.enableSharding(“perfTestDB”) db.movies_sharded.drop()
+sh.shardCollection(“perfTestDB.movies_sharded”, { year: 1 })
+
+4.  Insert the same 1,000,000 documents into sharded collection:
+
+print(“Inserting 1,000,000 docs into sharded collection…”) for (let i =
+0; i < 1000000; i++) { db.movies_sharded.insertOne({ title: “Movie” + i,
+genre: (i % 5 === 0) ? “Action” : “Drama”, year: 2000 + (i % 20),
+rating: Math.random() * 10 }) }
+
+5.  Equality query - unsharded:
+
+db.movies_unsharded.find({ year: 2010
+}).explain(“executionStats”).executionStats
+
+6.  Equality query - sharded:
+
+db.movies_sharded.find({ year: 2010
+}).explain(“executionStats”).executionStats
+
+7.  Range query - unsharded:
+
+db.movies_unsharded.find({ year: { $gte: 2010, $lt: 2015 }
+}).explain(“executionStats”).executionStats
+
+8.  Range query - sharded:
+
+db.movies_sharded.find({ year: { $gte: 2010, $lt: 2015 }
+}).explain(“executionStats”).executionStats
+
+9.  Aggregation query - unsharded:
+
+db.movies_unsharded.aggregate([ { $match: { year: { $gte: 2010, $lt:
+2015 } } }, { $group: { _id: "$genre”, avgRating: { $avg: "$rating” } }
+}]).explain(“executionStats”).stages
+
+10. Aggregation query - sharded:
+
+db.movies_sharded.aggregate([ { $match: { year: { $gte: 2010, $lt: 2015
+} } }, { $group: { _id: "$genre”, avgRating: { $avg: "$rating” } }
+}]).explain(“executionStats”).stages
+
+EXPECTED OUTPUT (AS SHOWN IN THE MANUAL) Before sharding: -
+executionTimeMillis: 30 - totalDocsExamined: 50000
+
+After sharding: - executionTimeMillis: 8 - totalDocsExamined: 12000
+
+These are example values from the manual. Actual results may vary
+depending on the machine and cluster setup.
+
+
+PORT MEMORY TABLE Config Server: 27019 Shard 1: 27018 Shard 2: 27020
+Mongos Router: 27017
+
+TERMINAL MEMORY TABLE Terminal 1: Start Config Server. Terminal 2:
+Connect and initialize Config Server. Terminal 3: Start Shard 1.
+Terminal 4: Start Shard 2. Terminal 5: Connect and initialize Shard 1.
+Terminal 6: Connect and initialize Shard 2. Terminal 7: Start Mongos
+Router. Terminal 8: Connect to Mongos, add shards, and run performance
+tests.
