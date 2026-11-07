@@ -1,159 +1,42 @@
-Experiment 7
-
-Create a simple application that uses MongoDB with python.
-
-Note: To install pymongo package: pip install pymongo
-
 import tkinter as tk
 from tkinter import messagebox
 from pymongo import MongoClient
 
-# MongoDB connection
-client = MongoClient("mongodb://localhost:27017/")
-db = client["collegeDB"]
-collection = db["students"]
+db = MongoClient("mongodb://localhost:27017/")["collegeDB"]
+col = db["students"]
 
-# Insert student record into MongoDB
-def insert_student():
-    name = name_entry.get()
-    roll = roll_entry.get()
-    branch = branch_entry.get()
-    cgpa = cgpa_entry.get()
+def insert():
+    n, r, b, c = [e.get() for e in entries]
+    if not all([n, r, b, c]):
+        messagebox.showwarning("Error", "All fields required!")
+    else:
+        try:
+            col.insert_one({"name": n, "roll": r, "branch": b, "cgpa": float(c)})
+            messagebox.showinfo("Success", "Record inserted!")
+            for e in entries:
+                e.delete(0, tk.END)
+        except ValueError:
+            messagebox.showerror("Error", "Invalid CGPA!")
 
-    if not (name and roll and branch and cgpa):
-        messagebox.showwarning("Input Error", "All fields are required!")
-        return
+def display():
+    result.delete("1.0", tk.END)
+    for s in col.find():
+        result.insert(tk.END, f"{s['name']} | {s['roll']} | {s['branch']} | {s['cgpa']}\n")
 
-    try:
-        cgpa = float(cgpa)
-        collection.insert_one({"name": name, "roll": roll, "branch": branch, "cgpa": cgpa})
-        messagebox.showinfo("Success", "Student record inserted.")
-        name_entry.delete(0, tk.END)
-        roll_entry.delete(0, tk.END)
-        branch_entry.delete(0, tk.END)
-        cgpa_entry.delete(0, tk.END)
-    except ValueError:
-        messagebox.showerror("Invalid Input", "CGPA must be a number.")
-
-# Display all student records
-def display_students():
-    students = collection.find()
-    result_text.delete("1.0", tk.END)
-    for s in students:
-        result_text.insert(tk.END, f"{s['name']} | {s['roll']} | {s['branch']} | {s['cgpa']}\n")
-
-# GUI setup
 app = tk.Tk()
-app.title("Student Database App (MongoDB)")
+app.title("Student Database App")
 
-tk.Label(app, text="Name:").grid(row=0, column=0)
-name_entry = tk.Entry(app)
-name_entry.grid(row=0, column=1)
+entries = []
+for i, label in enumerate(["Name", "Roll No", "Branch", "CGPA"]):
+    tk.Label(app, text=label).grid(row=i, column=0)
+    e = tk.Entry(app)
+    e.grid(row=i, column=1)
+    entries.append(e)
 
-tk.Label(app, text="Roll No:").grid(row=1, column=0)
-roll_entry = tk.Entry(app)
-roll_entry.grid(row=1, column=1)
+tk.Button(app, text="Insert Student", command=insert).grid(row=4, columnspan=2)
+tk.Button(app, text="Show All Students", command=display).grid(row=5, columnspan=2)
 
-tk.Label(app, text="Branch:").grid(row=2, column=0)
-branch_entry = tk.Entry(app)
-branch_entry.grid(row=2, column=1)
-
-tk.Label(app, text="CGPA:").grid(row=3, column=0)
-cgpa_entry = tk.Entry(app)
-cgpa_entry.grid(row=3, column=1)
-
-tk.Button(app, text="Insert Student", command=insert_student).grid(row=4, column=0, columnspan=2, pady=10)
-tk.Button(app, text="Show All Students", command=display_students).grid(row=5, column=0, columnspan=2, pady=5)
-
-result_text = tk.Text(app, width=50, height=10)
-result_text.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+result = tk.Text(app, width=50, height=10)
+result.grid(row=6, columnspan=2)
 
 app.mainloop()
-
-OUTPUT:
-
-Python + MongoDB Output
-
-{'_id': ObjectId('65f201'), 'name': 'Ravi', 'age': 30}
-{'_id': ObjectId('65f202'), 'name': 'Anita', 'age': 25}
-
-Open Ended Experiment
-
-i)	Description: Identify and implement solution using NO SQL database for scalable unstructured data.
-ii)	Implementation: 
-a.	Creation of batches: students will form group of maximum 3 members as batch to carry out the project.
-b.	Synopsis submission: Students will submit the synopsis for the problem identified that could be solved using machine learning techniques.
-addressing societal needs.
-c.	Presentation /Demo: Students will present their project along with report in specified format.
-
-
-
-
-
-
-
-
-
-VIVA-VOCE QUESTIONS
-1.	Define NoSQL.
-Answer: Non-relational database system.
-2.	What is the main advantage of NoSQL?
-Answer: Scalability.
-3.	Give one example of a column-oriented store.
-Answer: HBase.
-4.	Which NoSQL type is best for social networks?
-Answer: Graph databases.
-5.	What is the primary data unit in a document database?
-Answer: Document.
-6.	State one difference between key/value stores and document stores.
-Answer: Document stores support complex structures; key/value stores store simple pairs.
-7.	What is the role of HBase?
-Answer: Distributed storage.
-8.	Define horizontal scaling.
-Answer: Adding more servers to handle load.
-9.	Which NoSQL system uses memory-mapped files?
-Answer: MongoDB.
-10.	Name one difference between Memcached and Redis.
-Answer: Redis supports persistence; Memcached does not.
-11.	What is a compound index?
-Answer: Index on multiple fields.
-12.	Which operator uses indexes in MongoDB?
-Answer: $ operators.
-13.	What is the purpose of sparse indexes?
-Answer: Index only documents with the field.
-14.	When should indexing be avoided?
-Answer: On low-selectivity fields.
-15.	What is a capped collection?
-Answer: Fixed-size collection.
-16.	What is a tailable cursor used for?
-Answer: Real-time data streaming.
-17.	Define TTL index.
-Answer: Automatically deletes expired documents.
-18.	Which command is used for full-text search?
-Answer: $text.
-19.	What type of queries use geospatial indexes?
-Answer: Location-based queries.
-20.	What is GridFS used for?
-Answer: Storing large files.
-21.	What is the role of $match?
-Answer: Filters documents.
-22.	Which stage groups documents?
-Answer: $group.
-23.	What does $unwind do?
-Answer: Deconstructs arrays.
-24.	Define denormalization.
-Answer: Storing redundant data for performance.
-25.	What does cardinality mean?
-Answer: Uniqueness of values in a field.
-26.	Why is document growth optimization important?
-Answer: Prevents fragmentation.
-27.	What is schema migration?
-Answer: Changing database structure.
-28.	When should MongoDB not be used?
-Answer: For complex transactions.
-29.	What is the role of config servers?
-Answer: Store metadata for sharding.
-30.	What is a shard key?
-Answer: Field used to distribute data.
-
-
