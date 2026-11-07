@@ -8,7 +8,7 @@ Pre-requisites
 STEP 0 — Start Config Server
 Open a terminal and run:
 mkdir -p /data/configdb
-mongod --configsvr --replSet configReplSet --dbpath /data/configdb --port 27019
+mongod --configsvr --replSet configReplSet --dbpath /data/configdb --port 27019 --bind_ip localhost
 Then open mongo shell and initiate replica set:
 mongosh --port 27019
 rs.initiate({
@@ -20,8 +20,8 @@ rs.initiate({
 STEP 1 — Start Shard Servers
 Start two shard servers:
 mkdir -p /data/shard1 /data/shard2
-mongod --shardsvr --replSet shard1Repl --dbpath /data/shard1 --port 27018
-mongod --shardsvr --replSet shard2Repl --dbpath /data/shard2 --port 27020
+mongod --shardsvr --replSet shard1Repl --dbpath /data/shard1 --port 27018 --bind_ip localhost
+mongod --shardsvr --replSet shard2Repl --dbpath /data/shard2 --port 27020 --bind_ip localhost
 Initiate both replica sets separately:
 mongosh --port 27018
 rs.initiate({ _id: "shard1Repl", members: [ { _id: 0, host: "localhost:27018" } ] })
